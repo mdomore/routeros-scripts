@@ -1,29 +1,29 @@
-add dont-require-permissions=no name=remotecap owner=Admin_KE policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive \
-    source=":local f [/system routerboard get serial-number]\
-    \n:if ([/caps-man remote-cap print count-only] > 1) do={\
-    \n    :foreach i in=[/caps-man remote-cap find] do={\
-    \n        :local remoteCapSerial [:caps-man remote-cap get \$i serial]\
-    \n        :put \$remoteCapSerial;\
-    \n        :if (\$remoteCapSerial != \$f) do={\
-    \n            :local remoteCapMac [:pick [:caps-man remote-cap get \$i address] 0 17]\
-    \n            :local remoteCapLease [:ip dhcp-server lease find where mac-address=\$remoteCapMac]\
-    \n            :local remoteCapAddress [:ip dhcp-server lease get \$remoteCapLease address]\
-    \n            :system ssh \$remoteCapAddress user=admin command=\"\
-    \n                :user add group=full password=[/system routerboard get serial-number] name=Admin_KE;\
-    \n                :system ntp client set enabled=yes primary-ntp=172.22.0.101 secondary-ntp=172.22.0.102;\
-    \n                :tool mac-server set allowed-interface-list=none;\
-    \n                :tool mac-server mac-winbox set allowed-interface-list=none;\
-    \n                :tool mac-server ping set enabled=no;\
-    \n                :ip neighbor discovery-settings set discover-interface-list=none;\
-    \n                :tool bandwidth-server set enabled=no;\
-    \n                :ip dns set allow-remote-requests=no;\
-    \n                :ip proxy set enabled=no;\
-    \n                :ip socks set enabled=no;\
-    \n                :ip upnp set enabled=no;\
-    \n                :ip cloud set ddns-enabled=no update-time=no;\
-    \n                :if ([:len [:user find name=admin]] > 0) do={:user remove admin};\
-    \n                :ip service set ssh port=2222;\"\
-    \n        }\
-    \n    }\
-    \n}\
-    \n"
+add dont-require-permissions=no name=remotecap owner=admin policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive \
+source=":local f [/system routerboard get serial-number]\
+\n:if ([/caps-man remote-cap print count-only] > 1) do={\
+\n    :foreach i in=[/caps-man remote-cap find] do={\
+\n        :local remoteCapSerial [:caps-man remote-cap get \$i serial]\
+\n        :put \$remoteCapSerial;\
+\n        :if (\$remoteCapSerial != \$f) do={\
+\n            :local remoteCapMac [:pick [:caps-man remote-cap get \$i address] 0 17]\
+\n            :local remoteCapLease [:ip dhcp-server lease find where mac-address=\$remoteCapMac]\
+\n            :local remoteCapAddress [:ip dhcp-server lease get \$remoteCapLease address]\
+\n            :system ssh \$remoteCapAddress user=admin command=\"\
+\n                :user add group=full password=[/system routerboard get serial-number] name=admin_cap;\
+\n                :system ntp client set enabled=yes primary-ntp=10.10.10.1 secondary-ntp=10.10.10.2;\
+\n                :tool mac-server set allowed-interface-list=none;\
+\n                :tool mac-server mac-winbox set allowed-interface-list=none;\
+\n                :tool mac-server ping set enabled=no;\
+\n                :ip neighbor discovery-settings set discover-interface-list=none;\
+\n                :tool bandwidth-server set enabled=no;\
+\n                :ip dns set allow-remote-requests=no;\
+\n                :ip proxy set enabled=no;\
+\n                :ip socks set enabled=no;\
+\n                :ip upnp set enabled=no;\
+\n                :ip cloud set ddns-enabled=no update-time=no;\
+\n                :if ([:len [:user find name=admin]] > 0) do={:user remove admin};\
+\n                :ip service set ssh port=2222;\"\
+\n        }\
+\n    }\
+\n}\
+\n"
