@@ -1,169 +1,169 @@
-add dont-require-permissions=no name=vpnNomade owner=Admin_KE policy=ftp,read,write source="#cpe_cert_check\
-    \n:global cpeCrtChkF do={\
-    \n    :put (\"cpeCrtChkF\")\
-    \n    :global crt\
-    \n    :global idClient\
-    \n    :foreach c in=[:certificate find] do={\
-    \n        :local name [:certificate get \$c name]\
-    \n        :local authority [:certificate get \$c authority]\
-    \n        :local trusted [:certificate get \$c trusted]\
-    \n        :local issued [:certificate get \$c issued]\
-    \n        :local privateKey [:certificate get \$c private-key]\
-    \n        :local expired [:certificate get \$c expired]\
-    \n        :if (\$name = \$idClient.\"-ca-certificate\" || \$name ~ \"cert_export_\".\$idClient.\"-ca-certificate\
-    .crt\") do={\
-    \n#        :put (\$authority.\",\".\$trusted.\",\".\$issued.\",\".\$privateKey.\",\".\$expired)\
-    \n            :if (\$authority = true && (\$trusted = true or \$issued = true) && \$privateKey = true && expired\
-    \_!= true) do={\
-    \n#                :put (\"in0\")\
-    \n                :set (\$crt->0) 1\
-    \n            }\
-    \n        }\
-    \n        :if (\$name = \$idClient.\"-server-certificate\" || \$name ~ \"cert_export_\".\$idClient.\"-server-cer\
-    tificate.crt\") do={\
-    \n#        :put (\$authority.\",\".\$trusted.\",\".\$issued.\",\".\$privateKey.\",\".\$expired)\
-    \n            :if ((\$trusted = true or \$issued = true) && \$privateKey = true && expired != true) do={\
-    \n#                :put (\"in1\")\
-    \n                :set (\$crt->1) 1\
-    \n            }\
-    \n        }\
-    \n        :if ((\$name = \$idClient.\"-client-certificate\" || \$name ~ \"cert_export_\".\$idClient.\"-client-ce\
-    rtificate.crt\")) do={\
-    \n#        :put (\$authority.\",\".\$trusted.\",\".\$issued.\",\".\$privateKey.\",\".\$expired)\
-    \n            :if ((\$trusted = true or \$issued = true) && \$privateKey = true && expired != true) do={\
-    \n#                :put (\"in2\")\
-    \n                :set (\$crt->2) 1\
-    \n            }\
-    \n        }\
-    \n     }\
-    \n#:put (\$crt)\
-    \n}\
-    \n\
-    \n#cpe_files_import\
-    \n:global cpeFileImportF do={\
-    \n    :put (\"cpeFileImportF\")\
-    \n    :global idClient\
-    \n    :foreach f in=[:file find] do={\
-    \n        :local name [:file get \$f name]\
-    \n        :local type [:file get \$f type]\
-    \n#        :put (\$name.\",\".\$type)\
-    \n        if (type = \".crt file\") do={\
-    \n            :certificate import file-name=\$name passphrase=\$idClient\
-    \n        }\
-    \n    }\
-    \n    :foreach f in=[:file find] do={\
-    \n        :local name [:file get \$f name]\
-    \n        :local type [:file get \$f type]\
-    \n#        :put (\$name.\",\".\$type)\
-    \n        if (type = \".key file\") do={\
-    \n            :certificate import file-name=\$name passphrase=\$idClient\
-    \n        }\
-    \n    }\
-    \n}\
-    \n\
-    \n#cpe_files_export\
-    \n:global cpeFilesExportF do={\
-    \n    :put (\"cpeFilesExportF\")\
-    \n    :global idClient\
-    \n    :local files {\"cert_export_\".\$idClient.\"-ca-certificate.crt\";\"cert_export_\".\$idClient.\"-ca-certif\
-    icate.key\";\
-    \n    \"cert_export_\".\$idClient.\"-client-certificate.crt\";\"cert_export_\".\$idClient.\"-client-certificate.\
-    key\";\
-    \n    \"cert_export_\".\$idClient.\"-server-certificate.crt\";\"cert_export_\".\$idClient.\"-server-certificate.\
-    key\"}\
-    \n    :foreach f in=\$files do={\
-    \n#        :put (\$f)\
-    \n        :tool fetch mode=ftp user=mt_backup password=vaiTo2oi src-path=(\$f) dst-path=(\$f) port=21 address=17\
-    2.22.0.101 upload=yes\
-    \n        }\
-    \n}\
-    \n\
-    \n#srv_files_import\
-    \n:global srvFileImportF do={\
-    \n    :put (\"srvFileImportF\")\
-    \n    :global idClient\
-    \n    :local files {\"cert_export_\".\$idClient.\"-ca-certificate.crt\";\"cert_export_\".\$idClient.\"-ca-certif\
-    icate.key\";\
-    \n    \"cert_export_\".\$idClient.\"-client-certificate.crt\";\"cert_export_\".\$idClient.\"-client-certificate.\
-    key\";\
-    \n    \"cert_export_\".\$idClient.\"-server-certificate.crt\";\"cert_export_\".\$idClient.\"-server-certificate.\
-    key\"}\
-    \n    :foreach f in=\$files do={\
-    \n#        :put (\$f)\
-    \n        :tool fetch mode=ftp user=mt_backup password=vaiTo2oi src-path=(\$f) dst-path=(\$f) port=21 address=17\
-    2.22.0.101\
-    \n        }\
-    \n}\
-    \n#template_creation\
-    \n:global templateCreation do={\
-    \n    :global idClient\
-    \n    :certificate add name=\"\$idClient-ca-template\" common-name=\"\$idClient\" days-valid=3650 key-size=2048 \
-    key-usage=crl-sign,key-cert-sign\
-    \n    :certificate add name=\"\$idClient-server-template\" common-name=\"*.\$idClient\" days-valid=3650 key-size\
-    =2048 key-usage=digital-signature,key-encipherment,tls-server\
-    \n    :certificate add name=\"\$idClient-client-template\" common-name=\"client.\$idClient\" days-valid=3650 key\
-    -size=2048 key-usage=tls-client\
-    \n}\
-    \n\
-    \n#certificat_signing\
-    \n:global crtSigning do={\
-    \n    :put (\"crtSigning\")\
-    \n    :global idClient\
-    \n    :certificate sign \"\$idClient-ca-template\" name=\"\$idClient-ca-certificate\"\
-    \n    :certificate sign \"\$idClient-server-template\" name=\"\$idClient-server-certificate\" ca=\"\$idClient-ca\
-    -certificate\"\
-    \n    :certificate sign \"\$idClient-client-template\" name=\"\$idClient-client-certificate\" ca=\"\$idClient-ca\
-    -certificate\"\
-    \n}\
-    \n\
-    \n#certificat_export\
-    \n:global crtExport do={\
-    \n    :put (\"crtExport\")\
-    \n    :global idClient\
-    \n    :foreach c in=[:certificate find] do={:certificate export-certificate \$c export-passphrase=\$idClient}\
-    \n}\
-    \n\
-    \n#main\
-    \n\
-    \n:global crt {0;0;0};\
-    \n:global idClient IP00124390\
-    \n\$cpeCrtChkF\
-    \n#:put (\"crt \".\$crt)\
-    \n:if (\$crt != {1;1;1}) do={\
-    \n    :put (\"No valids locals certificates\")\
-    \n    :put (\"Tying to load from locals files\")\
-    \n    \$cpeFileImportF\
-    \n    \$cpeCrtChkF\
-    \n    :if (\$crt != {1;1;1}) do={\
-    \n        :put (\"Unable to load from local files\")\
-    \n        :put (\"Trying to get certificates from backup server\")\
-    \n        :do {\$srvFileImportF} on-error={}\
-    \n        \$cpeFileImportF\
-    \n        \$cpeCrtChkF\
-    \n        :if  (\$crt != {1;1;1}) do={\
-    \n            :put (\"No certificate found locally or on the backup server\")\
-    \n            :put (\"Creation of certificates\")\
-    \n            \$templateCreation\
-    \n            \$crtSigning\
-    \n            \$crtExport\
-    \n            :interface ovpn-server server set auth=sha1 certificate=\"\$idClient.-server-certificate\" cipher=\
-    aes128,aes192,aes256 default-profile=vpn-profile enabled=yes require-client-certificate=yes\
-    \n            :do {\$cpeFilesExportF} on-error={:put \"Error sending files to the backup server\"}\
-    \n        }\
-    \n    } else={\
-    \n        :put (\"Certificates have been successfully imported\")\
-    \n        do {:interface ovpn-server server set auth=sha1 certificate=(\$idClient.\"-server-certificate\") ciphe\
-    r=aes128,aes192,aes256 default-profile=vpn-profile enabled=yes require-client-certificate=yes} on-error={:interf\
-    ace ovpn-server server set auth=sha1 certificate=(\"cert_export_\".\$idClient.\"-server-certificate.crt_0\") cip\
-    her=aes128,aes192,aes256 default-profile=vpn-profile enabled=yes require-client-certificate=yes}\
-    \n        :do {\$cpeFilesExportF} on-error={:put \"Error sending files to the backup server\"}\
-    \n    }\
-    \n} else={\
-    \n    :put (\"Locals certificates valids\")\
-    \n    do {:interface ovpn-server server set auth=sha1 certificate=(\$idClient.\"-server-certificate\") cipher=ae\
-    s128,aes192,aes256 default-profile=vpn-profile enabled=yes require-client-certificate=yes} on-error={:interface \
-    ovpn-server server set auth=sha1 certificate=(\"cert_export_\".\$idClient.\"-server-certificate.crt_0\") cipher=\
-    aes128,aes192,aes256 default-profile=vpn-profile enabled=yes require-client-certificate=yes}\
-    \n    do {\$cpeFilesExportF} on-error={:put \"Error sending files to the backup server\"}\
-    \n}\
-    \n"
+add dont-require-permissions=no name=vpnNomade owner=admin policy=ftp,read,write source="#cpe_cert_check\
+\n:global cpeCrtChkF do={\
+\n    :put (\"cpeCrtChkF\")\
+\n    :global crt\
+\n    :global idClient\
+\n    :foreach c in=[:certificate find] do={\
+\n        :local name [:certificate get \$c name]\
+\n        :local authority [:certificate get \$c authority]\
+\n        :local trusted [:certificate get \$c trusted]\
+\n        :local issued [:certificate get \$c issued]\
+\n        :local privateKey [:certificate get \$c private-key]\
+\n        :local expired [:certificate get \$c expired]\
+\n        :if (\$name = \$idClient.\"-ca-certificate\" || \$name ~ \"cert_export_\".\$idClient.\"-ca-certificate\
+.crt\") do={\
+\n#        :put (\$authority.\",\".\$trusted.\",\".\$issued.\",\".\$privateKey.\",\".\$expired)\
+\n            :if (\$authority = true && (\$trusted = true or \$issued = true) && \$privateKey = true && expired\
+\_!= true) do={\
+\n#                :put (\"in0\")\
+\n                :set (\$crt->0) 1\
+\n            }\
+\n        }\
+\n        :if (\$name = \$idClient.\"-server-certificate\" || \$name ~ \"cert_export_\".\$idClient.\"-server-cer\
+tificate.crt\") do={\
+\n#        :put (\$authority.\",\".\$trusted.\",\".\$issued.\",\".\$privateKey.\",\".\$expired)\
+\n            :if ((\$trusted = true or \$issued = true) && \$privateKey = true && expired != true) do={\
+\n#                :put (\"in1\")\
+\n                :set (\$crt->1) 1\
+\n            }\
+\n        }\
+\n        :if ((\$name = \$idClient.\"-client-certificate\" || \$name ~ \"cert_export_\".\$idClient.\"-client-ce\
+rtificate.crt\")) do={\
+\n#        :put (\$authority.\",\".\$trusted.\",\".\$issued.\",\".\$privateKey.\",\".\$expired)\
+\n            :if ((\$trusted = true or \$issued = true) && \$privateKey = true && expired != true) do={\
+\n#                :put (\"in2\")\
+\n                :set (\$crt->2) 1\
+\n            }\
+\n        }\
+\n     }\
+\n#:put (\$crt)\
+\n}\
+\n\
+\n#cpe_files_import\
+\n:global cpeFileImportF do={\
+\n    :put (\"cpeFileImportF\")\
+\n    :global idClient\
+\n    :foreach f in=[:file find] do={\
+\n        :local name [:file get \$f name]\
+\n        :local type [:file get \$f type]\
+\n#        :put (\$name.\",\".\$type)\
+\n        if (type = \".crt file\") do={\
+\n            :certificate import file-name=\$name passphrase=\$idClient\
+\n        }\
+\n    }\
+\n    :foreach f in=[:file find] do={\
+\n        :local name [:file get \$f name]\
+\n        :local type [:file get \$f type]\
+\n#        :put (\$name.\",\".\$type)\
+\n        if (type = \".key file\") do={\
+\n            :certificate import file-name=\$name passphrase=\$idClient\
+\n        }\
+\n    }\
+\n}\
+\n\
+\n#cpe_files_export\
+\n:global cpeFilesExportF do={\
+\n    :put (\"cpeFilesExportF\")\
+\n    :global idClient\
+\n    :local files {\"cert_export_\".\$idClient.\"-ca-certificate.crt\";\"cert_export_\".\$idClient.\"-ca-certif\
+icate.key\";\
+\n    \"cert_export_\".\$idClient.\"-client-certificate.crt\";\"cert_export_\".\$idClient.\"-client-certificate.\
+key\";\
+\n    \"cert_export_\".\$idClient.\"-server-certificate.crt\";\"cert_export_\".\$idClient.\"-server-certificate.\
+key\"}\
+\n    :foreach f in=\$files do={\
+\n#        :put (\$f)\
+\n        :tool fetch mode=ftp user=user password=password src-path=(\$f) dst-path=(\$f) port=21 address=10\
+.10.10.1 upload=yes\
+\n        }\
+\n}\
+\n\
+\n#srv_files_import\
+\n:global srvFileImportF do={\
+\n    :put (\"srvFileImportF\")\
+\n    :global idClient\
+\n    :local files {\"cert_export_\".\$idClient.\"-ca-certificate.crt\";\"cert_export_\".\$idClient.\"-ca-certif\
+icate.key\";\
+\n    \"cert_export_\".\$idClient.\"-client-certificate.crt\";\"cert_export_\".\$idClient.\"-client-certificate.\
+key\";\
+\n    \"cert_export_\".\$idClient.\"-server-certificate.crt\";\"cert_export_\".\$idClient.\"-server-certificate.\
+key\"}\
+\n    :foreach f in=\$files do={\
+\n#        :put (\$f)\
+\n        :tool fetch mode=ftp user=user password=password src-path=(\$f) dst-path=(\$f) port=21 address=10\
+.10.10.1\
+\n        }\
+\n}\
+\n#template_creation\
+\n:global templateCreation do={\
+\n    :global idClient\
+\n    :certificate add name=\"\$idClient-ca-template\" common-name=\"\$idClient\" days-valid=3650 key-size=2048 \
+key-usage=crl-sign,key-cert-sign\
+\n    :certificate add name=\"\$idClient-server-template\" common-name=\"*.\$idClient\" days-valid=3650 key-size\
+=2048 key-usage=digital-signature,key-encipherment,tls-server\
+\n    :certificate add name=\"\$idClient-client-template\" common-name=\"client.\$idClient\" days-valid=3650 key\
+-size=2048 key-usage=tls-client\
+\n}\
+\n\
+\n#certificat_signing\
+\n:global crtSigning do={\
+\n    :put (\"crtSigning\")\
+\n    :global idClient\
+\n    :certificate sign \"\$idClient-ca-template\" name=\"\$idClient-ca-certificate\"\
+\n    :certificate sign \"\$idClient-server-template\" name=\"\$idClient-server-certificate\" ca=\"\$idClient-ca\
+-certificate\"\
+\n    :certificate sign \"\$idClient-client-template\" name=\"\$idClient-client-certificate\" ca=\"\$idClient-ca\
+-certificate\"\
+\n}\
+\n\
+\n#certificat_export\
+\n:global crtExport do={\
+\n    :put (\"crtExport\")\
+\n    :global idClient\
+\n    :foreach c in=[:certificate find] do={:certificate export-certificate \$c export-passphrase=\$idClient}\
+\n}\
+\n\
+\n#main\
+\n\
+\n:global crt {0;0;0};\
+\n:global idClient IP00124390\
+\n\$cpeCrtChkF\
+\n#:put (\"crt \".\$crt)\
+\n:if (\$crt != {1;1;1}) do={\
+\n    :put (\"No valids locals certificates\")\
+\n    :put (\"Tying to load from locals files\")\
+\n    \$cpeFileImportF\
+\n    \$cpeCrtChkF\
+\n    :if (\$crt != {1;1;1}) do={\
+\n        :put (\"Unable to load from local files\")\
+\n        :put (\"Trying to get certificates from backup server\")\
+\n        :do {\$srvFileImportF} on-error={}\
+\n        \$cpeFileImportF\
+\n        \$cpeCrtChkF\
+\n        :if  (\$crt != {1;1;1}) do={\
+\n            :put (\"No certificate found locally or on the backup server\")\
+\n            :put (\"Creation of certificates\")\
+\n            \$templateCreation\
+\n            \$crtSigning\
+\n            \$crtExport\
+\n            :interface ovpn-server server set auth=sha1 certificate=\"\$idClient.-server-certificate\" cipher=\
+aes128,aes192,aes256 default-profile=vpn-profile enabled=yes require-client-certificate=yes\
+\n            :do {\$cpeFilesExportF} on-error={:put \"Error sending files to the backup server\"}\
+\n        }\
+\n    } else={\
+\n        :put (\"Certificates have been successfully imported\")\
+\n        do {:interface ovpn-server server set auth=sha1 certificate=(\$idClient.\"-server-certificate\") ciphe\
+r=aes128,aes192,aes256 default-profile=vpn-profile enabled=yes require-client-certificate=yes} on-error={:interf\
+ace ovpn-server server set auth=sha1 certificate=(\"cert_export_\".\$idClient.\"-server-certificate.crt_0\") cip\
+her=aes128,aes192,aes256 default-profile=vpn-profile enabled=yes require-client-certificate=yes}\
+\n        :do {\$cpeFilesExportF} on-error={:put \"Error sending files to the backup server\"}\
+\n    }\
+\n} else={\
+\n    :put (\"Locals certificates valids\")\
+\n    do {:interface ovpn-server server set auth=sha1 certificate=(\$idClient.\"-server-certificate\") cipher=ae\
+s128,aes192,aes256 default-profile=vpn-profile enabled=yes require-client-certificate=yes} on-error={:interface \
+ovpn-server server set auth=sha1 certificate=(\"cert_export_\".\$idClient.\"-server-certificate.crt_0\") cipher=\
+aes128,aes192,aes256 default-profile=vpn-profile enabled=yes require-client-certificate=yes}\
+\n    do {\$cpeFilesExportF} on-error={:put \"Error sending files to the backup server\"}\
+\n}\
+\n"
