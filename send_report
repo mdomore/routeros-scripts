@@ -1,23 +1,23 @@
-add dont-require-permissions=no name=sendreport owner=Admin_KE policy=\
-    ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon source="#get pppoe login status\
-    \n:foreach j in=[:interface pppoe-client find] do={\
-    \n    :local send [:system routerboard get serial-number];\
-    \n    :set send (\$send,(\"login\"))\
-    \n    :set send (\$send,([:interface pppoe-client get \$j user]))\
-    \n    if ([:interface pppoe-client get \$j running]) do={\
-    \n        :set send (\$send,1)\
-    \n    } else={:set send (\$send,0)}\
-    \n:log error message=\$send\
-    \n}\
-    \n\
-    \n#get l2tp login status\
-    \n:foreach k in=[:interface l2tp-client find] do={\
-    \n    :local send [:system routerboard get serial-number];\
-    \n    :set send (\$send,(\"login\"))\
-    \n    :set send (\$send,([:interface l2tp-client get \$k user]))\
-    \n    if ([:interface l2tp-client get \$k running]) do={\
-    \n        :set send (\$send,1)\
-    \n    } else={ :set send (\$send,0)}\
-    \n:log error message=\$send;\
-    \n}\
-    \n"
+add dont-require-permissions=no name=sendreport owner=admin policy=\
+ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon source="#get pppoe login status\
+\n:foreach j in=[:interface pppoe-client find] do={\
+\n    :local send [:system routerboard get serial-number];\
+\n    :set send (\$send,(\"login\"))\
+\n    :set send (\$send,([:interface pppoe-client get \$j user]))\
+\n    if ([:interface pppoe-client get \$j running]) do={\
+\n        :set send (\$send,1)\
+\n    } else={:set send (\$send,0)}\
+\n:log error message=\$send\
+\n}\
+\n\
+\n#get l2tp login status\
+\n:foreach k in=[:interface l2tp-client find] do={\
+\n    :local send [:system routerboard get serial-number];\
+\n    :set send (\$send,(\"login\"))\
+\n    :set send (\$send,([:interface l2tp-client get \$k user]))\
+\n    if ([:interface l2tp-client get \$k running]) do={\
+\n        :set send (\$send,1)\
+\n    } else={ :set send (\$send,0)}\
+\n:log error message=\$send;\
+\n}\
+\n"
