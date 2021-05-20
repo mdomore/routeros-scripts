@@ -1,224 +1,224 @@
 /system script
 add name=checkstatus owner=admin policy=read,write,policy,test,password,sniff,sensitive,romon source=":global temp 0\
-    \n:global rules {{{\"Link4\"=0};{\"L40\"}};{{\"Link4\"=1};{\"L43\"}}}\
-    \n:global x 0\
-    \n:global need {\"Link4\"=\"\"}\
-    \n:global linkstatus {\"Link4\"=\"\"}\
-    \n:global linknumber 0\
-    \n\
-    \n##\
-    \n# PPPOE STATUS\
-    \n:put (\"PPPOE STATUS\")\
-    \n:foreach n,l in=\$linkstatus do={\
-    \n    :local result 0\
-    \n    :global E 0\
-    \n    :global D 0\
-    \n    :foreach i in=[:interface pppoe-client find interface=\$n] do={\
-    \n        :local pppoename [:interface pppoe-client get \$i name]\
-    \n        :local disabled [:interface pppoe-client get \$pppoename disabled]\
-    \n        :local pppoestatus\
-    \n        :interface pppoe-client monitor \$pppoename once do={:set pppoestatus \$status}\
-    \n        :if (disabled = false) do={\
-    \n            :global E 1\
-    \n        } else={\
-    \n            :global E 0\
-    \n        }\
-    \n        :if (pppoestatus = \"connected\") do={\
-    \n            :global D 1\
-    \n        } else={\
-    \n            :global D 0\
-    \n        }\
-    \n        :set \$result (\$result + (\$E*\$D))\
-    \n        :set (\$linkstatus->\$n) \$result\
-    \n    }\
-    \n}\
-    \n#:put (\"linkstatus : \")\
-    \n#:put (\$linkstatus)\
-    \n\
-    \n##\
-    \n#L2TP STATUS\
-    \n:put (\"L2TP STATUS\")\
-    \n:foreach n,l in=\$linkstatus do={\
-    \n    :local result 0\
-    \n    :global E 0\
-    \n    :global D 0\
-    \n    :foreach i in=[:interface l2tp-client find comment=\$n] do={\
-    \n        :local l2tpname [:interface l2tp-client get \$i name]\
-    \n        :local disabled [:interface l2tp-client get \$i disabled]\
-    \n        :local l2tpstatus\
-    \n        :interface l2tp-client monitor \$l2tpname once do={:set l2tpstatus \$status}\
-    \n        :if (disabled = false) do={\
-    \n            :global E 1\
-    \n        } else={\
-    \n            :global E 0\
-    \n        }\
-    \n        :if (l2tpstatus = \"connected\") do={\
-    \n            :global D 1\
-    \n        } else={\
-    \n            :global D 0\
-    \n        }\
-    \n        :set \$result (\$result + (\$E*\$D))\
-    \n        :set (\$linkstatus->\$n) \$result\
-    \n    }\
-    \n}\
-    \n#:put (\"linkstatus : \")\
-    \n#:put (\$linkstatus)\
-    \n\
-    \n:foreach x in=\$linkstatus do={\
-    \n    :set \$linknumber (\$linknumber+1)\
-    \n}\
-    \n\
-    \n##\
-    \n#NEED\
-    \n#:put (\"CREATE NEED\")\
-    \n:foreach c in=\$rules do={\
-    \n#    :put (\$c)\
-    \n    :set \$temp 0\
-    \n    :foreach a,b in=(\$c->0) do={\
-    \n#        :put (\"a : \".\$a.\" / b : \".\$b)\
-    \n        :foreach x,y in=\$linkstatus do={\
-    \n#            :put (\"x : \".\$x.\" / y : \".\$y)\
-    \n            :if (\$x = \$a) do={\
-    \n                :if (\$b = \$y) do={\
-    \n                    :set \$temp (\$temp+1);\
-    \n                }\
-    \n            }\
-    \n            :if (\$temp=\$linknumber) do={\
-    \n                :foreach l in=(\$c->1) do={\
-    \n                    :local i [:pick (\$l) 1];\
-    \n                    :foreach d,e in=\$need do={\
-    \n                        :if ([:pick (\$d) 4] = \$i) do={\
-    \n#                            :put (\"match\")\
-    \n                            :set (\$need->\"\$d\") \$l;\
-    \n                        }\
-    \n                    }\
-    \n                }\
-    \n            }\
-    \n        }\
-    \n    }\
-    \n}\
-    \n\
-    \n:global matchDV 0\
-    \n\
-    \n##\
-    \n#SET PPPOE\
-    \n:put (\"SET PPPOE\")\
-    \n:foreach j in=[:interface pppoe-client find] do={\
-    \n    :local pppoelink [:interface pppoe-client get \$j interface]\
-    \n    :local pppoename [:interface pppoe-client get \$j name]\
-    \n    :local disabled [:interface pppoe-client get \$pppoename disabled]\
-    \n    :foreach n,l in=\$need do={\
-    \n        :if (\$pppoelink = \$n) do={\
-    \n            :if (pppoename != \$l) do={\
-    \n                :put (\"desactivation \".\$pppoename.\" login inutile\")\
-    \n                :interface pppoe-client disable \$pppoename\
-    \n            }\
-    \n            :if (pppoename = \$l and disabled = true) do={\
-    \n                :put (\"activation login \".\$pppoename)\
-    \n                :interface pppoe-client enable \$pppoename\
-    \n                :if ([:pick \$pppoename 2] = 3) do={\
-    \n                    :set \$matchDV (\$matchDV+1)\
-    \n                    :put (\"match datavoix\")\
-    \n                }\
-    \n            }\
-    \n            :if (pppoename = \$l and disabled = false) do={\
-    \n                :put (\"leave login \".\$pppoename.\" active\")\
-    \n                :if ([:pick \$pppoename 2] = 3) do={\
-    \n                    :set \$matchDV (\$matchDV+1)\
-    \n                    :put (\"match datavoix\")\
-    \n                }\
-    \n            }\
-    \n            :if (\$matchDV != 0) do={\
-    \n                :ip firewall mangle disable [:ip firewall mangle find comment=\"markvoix\"]\
-    \n                } else={\
-    \n                :ip firewall mangle enable [:ip firewall mangle find comment=\"markvoix\"]\
-    \n                }\
-    \n        }\
-    \n    }\
-    \n}\
-    \n\
-    \n##\
-    \n#SET L2TP\
-    \n:put (\"SET L2TP\")\
-    \n:foreach k in=[:interface l2tp-client find] do={\
-    \n    :local l2tpname [:interface l2tp-client get \$k name]\
-    \n    :local disabled [:interface l2tp-client get \$k disabled]\
-    \n    :local l2tplink [:interface l2tp-client get \$k comment]\
-    \n    :foreach n,l in=\$need do={\
-    \n        :if (\$l2tplink = \$n) do={\
-    \n            :if (l2tpname != \$l) do={\
-    \n                :put (\"desactivation \".\$l2tpname.\" login inutile\")\
-    \n                :interface l2tp-client disable \$l2tpname\
-    \n            }\
-    \n            :if (l2tpname = \$l and disabled = true) do={\
-    \n                :put (\"activation login \".\$l2tpname)\
-    \n                :interface l2tp-client enable \$l2tpname\
-    \n                :if ([:pick \$l2tpname 2] = 3) do={\
-    \n                    :set \$matchDV (\$matchDV+1)\
-    \n                }\
-    \n            }\
-    \n            :if (l2tpname = \$l and disabled = false) do={\
-    \n                :put (\"leave login \".\$l2tpname.\" active\")\
-    \n                :if ([:pick \$l2tpname 2] = 3) do={\
-    \n                    :set \$matchDV (\$matchDV+1)\
-    \n                }\
-    \n            }\
-    \n            :if (\$matchDV != 0) do={\
-    \n                :ip firewall mangle disable [:ip firewall mangle find comment=\"markvoix\"]\
-    \n            } else={\
-    \n                :ip firewall mangle enable [:ip firewall mangle find comment=\"markvoix\"]\
-    \n            }\
-    \n        }\
-    \n    }\
-    \n}\
-    \n\
-    \n:put (\"SET L2TP PEER ROUTE\")\
-    \n\
-    \n\
-    \n:set temp 0\
-    \n:foreach x,y in=\$l2tproutes do={\
-    \n    :if (\$temp = 0) do={\
-    \n        :set (\$l2tproutes->\$x) \"46.21.128.5/32\"\
-    \n        :set temp 1\
-    \n    } else={\
-    \n        :set (\$l2tproutes->\$x) \"46.21.128.25/32\"\
-    \n    }\
-    \n}\
-    \n\
-    \n:foreach x,y in=\$l2tproutes do={\
-    \n    :foreach k in=[:interface l2tp-client find] do={\
-    \n        :local connectTo [:interface l2tp-client get \$k connect-to]\
-    \n        :local l2tplink [:interface l2tp-client get \$k comment]\
-    \n        :if (\$l2tplink = \$x and \$connectTo~\"l2tpsec\") do={\
-    \n            :interface l2tp-client set connect-to=[:pick \$y 0 [:find \$y \"/\"]] \$k\
-    \n        }\
-    \n    }\
-    \n}\
-    \n\
-    \n:foreach x,y in=\$l2tproutes do={\
-    \n    :local ipMask\
-    \n    :local gateway\
-    \n    :if ([:ip route find vrf-interface=\$x type!=blackhole] != \"\") do={\
-    \n        :set \$ipMask [:ip address get [:ip address find interface=\"\$x\"] address]\
-    \n    }\
-    \n    :local ip [:pick \$ipMask 0 [:find \$ipMask \"/\"]]\
-    \n    :if ([:ip route find dst-address=\"0.0.0.0/0\" vrf-interface=\"\$x\"] != \"\") do={\
-    \n        :set gateway [:ip route get [:ip route find dst-address=\"0.0.0.0/0\" vrf-interface=\"\$x\" ] gateway ]\
-    \n    }\
-    \n    :if ([:ip route find comment=\$x type=blackhole] = \"\") do={\
-    \n        :ip route add dst-address=\$y type=blackhole comment=\$x distance=10\
-    \n    }\
-    \n    :if ([:interface ethernet get \$x running] or [:interface bridge get \$x running]) do={\
-    \n        :if (([:ip route find comment=\$x type!=blackhole pref-src!=\$ip] != \"\") or ([:ip route find comment=\$x type!=blackhole] = \"\")) do={\
-    \n            :local route [:ip route find comment=\$x type!=blackhole pref-src!=\$ip]\
-    \n            :ip route remove \$route\
-    \n            :ip route add comment=\$x pref-src=\$ip dst-address=\$y gateway=\$gateway\
-    \n        }\
-    \n    } else={\
-    \n        :if ([:ip route find comment=\$x type!=blackhole] != \"\") do={\
-    \n            :ip route remove [:ip route find comment=\$x type!=blackhole]\
-    \n        }\
-    \n    }\
-    \n}"
+\n:global rules {{{\"Link4\"=0};{\"L40\"}};{{\"Link4\"=1};{\"L43\"}}}\
+\n:global x 0\
+\n:global need {\"Link4\"=\"\"}\
+\n:global linkstatus {\"Link4\"=\"\"}\
+\n:global linknumber 0\
+\n\
+\n##\
+\n# PPPOE STATUS\
+\n:put (\"PPPOE STATUS\")\
+\n:foreach n,l in=\$linkstatus do={\
+\n    :local result 0\
+\n    :global E 0\
+\n    :global D 0\
+\n    :foreach i in=[:interface pppoe-client find interface=\$n] do={\
+\n        :local pppoename [:interface pppoe-client get \$i name]\
+\n        :local disabled [:interface pppoe-client get \$pppoename disabled]\
+\n        :local pppoestatus\
+\n        :interface pppoe-client monitor \$pppoename once do={:set pppoestatus \$status}\
+\n        :if (disabled = false) do={\
+\n            :global E 1\
+\n        } else={\
+\n            :global E 0\
+\n        }\
+\n        :if (pppoestatus = \"connected\") do={\
+\n            :global D 1\
+\n        } else={\
+\n            :global D 0\
+\n        }\
+\n        :set \$result (\$result + (\$E*\$D))\
+\n        :set (\$linkstatus->\$n) \$result\
+\n    }\
+\n}\
+\n#:put (\"linkstatus : \")\
+\n#:put (\$linkstatus)\
+\n\
+\n##\
+\n#L2TP STATUS\
+\n:put (\"L2TP STATUS\")\
+\n:foreach n,l in=\$linkstatus do={\
+\n    :local result 0\
+\n    :global E 0\
+\n    :global D 0\
+\n    :foreach i in=[:interface l2tp-client find comment=\$n] do={\
+\n        :local l2tpname [:interface l2tp-client get \$i name]\
+\n        :local disabled [:interface l2tp-client get \$i disabled]\
+\n        :local l2tpstatus\
+\n        :interface l2tp-client monitor \$l2tpname once do={:set l2tpstatus \$status}\
+\n        :if (disabled = false) do={\
+\n            :global E 1\
+\n        } else={\
+\n            :global E 0\
+\n        }\
+\n        :if (l2tpstatus = \"connected\") do={\
+\n            :global D 1\
+\n        } else={\
+\n            :global D 0\
+\n        }\
+\n        :set \$result (\$result + (\$E*\$D))\
+\n        :set (\$linkstatus->\$n) \$result\
+\n    }\
+\n}\
+\n#:put (\"linkstatus : \")\
+\n#:put (\$linkstatus)\
+\n\
+\n:foreach x in=\$linkstatus do={\
+\n    :set \$linknumber (\$linknumber+1)\
+\n}\
+\n\
+\n##\
+\n#NEED\
+\n#:put (\"CREATE NEED\")\
+\n:foreach c in=\$rules do={\
+\n#    :put (\$c)\
+\n    :set \$temp 0\
+\n    :foreach a,b in=(\$c->0) do={\
+\n#        :put (\"a : \".\$a.\" / b : \".\$b)\
+\n        :foreach x,y in=\$linkstatus do={\
+\n#            :put (\"x : \".\$x.\" / y : \".\$y)\
+\n            :if (\$x = \$a) do={\
+\n                :if (\$b = \$y) do={\
+\n                    :set \$temp (\$temp+1);\
+\n                }\
+\n            }\
+\n            :if (\$temp=\$linknumber) do={\
+\n                :foreach l in=(\$c->1) do={\
+\n                    :local i [:pick (\$l) 1];\
+\n                    :foreach d,e in=\$need do={\
+\n                        :if ([:pick (\$d) 4] = \$i) do={\
+\n#                            :put (\"match\")\
+\n                            :set (\$need->\"\$d\") \$l;\
+\n                        }\
+\n                    }\
+\n                }\
+\n            }\
+\n        }\
+\n    }\
+\n}\
+\n\
+\n:global matchDV 0\
+\n\
+\n##\
+\n#SET PPPOE\
+\n:put (\"SET PPPOE\")\
+\n:foreach j in=[:interface pppoe-client find] do={\
+\n    :local pppoelink [:interface pppoe-client get \$j interface]\
+\n    :local pppoename [:interface pppoe-client get \$j name]\
+\n    :local disabled [:interface pppoe-client get \$pppoename disabled]\
+\n    :foreach n,l in=\$need do={\
+\n        :if (\$pppoelink = \$n) do={\
+\n            :if (pppoename != \$l) do={\
+\n                :put (\"desactivation \".\$pppoename.\" login inutile\")\
+\n                :interface pppoe-client disable \$pppoename\
+\n            }\
+\n            :if (pppoename = \$l and disabled = true) do={\
+\n                :put (\"activation login \".\$pppoename)\
+\n                :interface pppoe-client enable \$pppoename\
+\n                :if ([:pick \$pppoename 2] = 3) do={\
+\n                    :set \$matchDV (\$matchDV+1)\
+\n                    :put (\"match datavoix\")\
+\n                }\
+\n            }\
+\n            :if (pppoename = \$l and disabled = false) do={\
+\n                :put (\"leave login \".\$pppoename.\" active\")\
+\n                :if ([:pick \$pppoename 2] = 3) do={\
+\n                    :set \$matchDV (\$matchDV+1)\
+\n                    :put (\"match datavoix\")\
+\n                }\
+\n            }\
+\n            :if (\$matchDV != 0) do={\
+\n                :ip firewall mangle disable [:ip firewall mangle find comment=\"markvoix\"]\
+\n                } else={\
+\n                :ip firewall mangle enable [:ip firewall mangle find comment=\"markvoix\"]\
+\n                }\
+\n        }\
+\n    }\
+\n}\
+\n\
+\n##\
+\n#SET L2TP\
+\n:put (\"SET L2TP\")\
+\n:foreach k in=[:interface l2tp-client find] do={\
+\n    :local l2tpname [:interface l2tp-client get \$k name]\
+\n    :local disabled [:interface l2tp-client get \$k disabled]\
+\n    :local l2tplink [:interface l2tp-client get \$k comment]\
+\n    :foreach n,l in=\$need do={\
+\n        :if (\$l2tplink = \$n) do={\
+\n            :if (l2tpname != \$l) do={\
+\n                :put (\"desactivation \".\$l2tpname.\" login inutile\")\
+\n                :interface l2tp-client disable \$l2tpname\
+\n            }\
+\n            :if (l2tpname = \$l and disabled = true) do={\
+\n                :put (\"activation login \".\$l2tpname)\
+\n                :interface l2tp-client enable \$l2tpname\
+\n                :if ([:pick \$l2tpname 2] = 3) do={\
+\n                    :set \$matchDV (\$matchDV+1)\
+\n                }\
+\n            }\
+\n            :if (l2tpname = \$l and disabled = false) do={\
+\n                :put (\"leave login \".\$l2tpname.\" active\")\
+\n                :if ([:pick \$l2tpname 2] = 3) do={\
+\n                    :set \$matchDV (\$matchDV+1)\
+\n                }\
+\n            }\
+\n            :if (\$matchDV != 0) do={\
+\n                :ip firewall mangle disable [:ip firewall mangle find comment=\"markvoix\"]\
+\n            } else={\
+\n                :ip firewall mangle enable [:ip firewall mangle find comment=\"markvoix\"]\
+\n            }\
+\n        }\
+\n    }\
+\n}\
+\n\
+\n:put (\"SET L2TP PEER ROUTE\")\
+\n\
+\n\
+\n:set temp 0\
+\n:foreach x,y in=\$l2tproutes do={\
+\n    :if (\$temp = 0) do={\
+\n        :set (\$l2tproutes->\$x) \"46.21.128.5/32\"\
+\n        :set temp 1\
+\n    } else={\
+\n        :set (\$l2tproutes->\$x) \"46.21.128.25/32\"\
+\n    }\
+\n}\
+\n\
+\n:foreach x,y in=\$l2tproutes do={\
+\n    :foreach k in=[:interface l2tp-client find] do={\
+\n        :local connectTo [:interface l2tp-client get \$k connect-to]\
+\n        :local l2tplink [:interface l2tp-client get \$k comment]\
+\n        :if (\$l2tplink = \$x and \$connectTo~\"l2tpsec\") do={\
+\n            :interface l2tp-client set connect-to=[:pick \$y 0 [:find \$y \"/\"]] \$k\
+\n        }\
+\n    }\
+\n}\
+\n\
+\n:foreach x,y in=\$l2tproutes do={\
+\n    :local ipMask\
+\n    :local gateway\
+\n    :if ([:ip route find vrf-interface=\$x type!=blackhole] != \"\") do={\
+\n        :set \$ipMask [:ip address get [:ip address find interface=\"\$x\"] address]\
+\n    }\
+\n    :local ip [:pick \$ipMask 0 [:find \$ipMask \"/\"]]\
+\n    :if ([:ip route find dst-address=\"0.0.0.0/0\" vrf-interface=\"\$x\"] != \"\") do={\
+\n        :set gateway [:ip route get [:ip route find dst-address=\"0.0.0.0/0\" vrf-interface=\"\$x\" ] gateway ]\
+\n    }\
+\n    :if ([:ip route find comment=\$x type=blackhole] = \"\") do={\
+\n        :ip route add dst-address=\$y type=blackhole comment=\$x distance=10\
+\n    }\
+\n    :if ([:interface ethernet get \$x running] or [:interface bridge get \$x running]) do={\
+\n        :if (([:ip route find comment=\$x type!=blackhole pref-src!=\$ip] != \"\") or ([:ip route find comment=\$x type!=blackhole] = \"\")) do={\
+\n            :local route [:ip route find comment=\$x type!=blackhole pref-src!=\$ip]\
+\n            :ip route remove \$route\
+\n            :ip route add comment=\$x pref-src=\$ip dst-address=\$y gateway=\$gateway\
+\n        }\
+\n    } else={\
+\n        :if ([:ip route find comment=\$x type!=blackhole] != \"\") do={\
+\n            :ip route remove [:ip route find comment=\$x type!=blackhole]\
+\n        }\
+\n    }\
+\n}"
 
 
